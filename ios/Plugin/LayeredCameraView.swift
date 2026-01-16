@@ -11,6 +11,7 @@ class LayeredCameraView: UIView {
     private var currentFlashMode: AVCaptureDevice.FlashMode = .off
     private var layers: [CameraLayerData] = []
     private var captureCompletion: ((CaptureResultData?, Error?) -> Void)?
+    private var imageCache: [String: UIImage] = [:]
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -161,6 +162,21 @@ class LayeredCameraView: UIView {
     
     func updateLayers(_ layers: [CameraLayerData]) {
         self.layers = layers
+        
+        // Preload remote images asynchronously
+        for layer in layers where layer.type == "image" {
+            if let imageUrl = layer.imageUrl,
+               let url = URL(string: imageUrl),
+               imageCache[imageUrl] == nil {
+                // Load image asynchronously and cache it
+                URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+                    if let data = data, let image = UIImage(data: data) {
+                        self?.imageCache[imageUrl] = image
+                    }
+                }.resume()
+            }
+        }
+        
         self.setNeedsDisplay()
     }
     
@@ -333,12 +349,8 @@ class LayeredCameraView: UIView {
                 image = UIImage(contentsOfFile: imagePath)
             }
         } else if let imageUrl = layer.imageUrl {
-            // For remote URLs, we would need async loading
-            // This is a simplified version - production would cache images
-            if let url = URL(string: imageUrl),
-               let data = try? Data(contentsOf: url) {
-                image = UIImage(data: data)
-            }
+            // Use cached image for remote URLs
+            image = imageCache[imageUrl]
         }
         
         if let image = image {

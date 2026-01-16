@@ -17,6 +17,7 @@ export class CameraLayersWeb extends WebPlugin implements CameraLayersPlugin {
   private currentCamera: 'front' | 'back' = 'back';
   private animationFrameId: number | null = null;
   private containerElement: HTMLDivElement | null = null;
+  private imageCache: Map<string, HTMLImageElement> = new Map();
 
   async start(options: CameraStartOptions): Promise<void> {
     const position = options.position || 'back';
@@ -165,6 +166,12 @@ export class CameraLayersWeb extends WebPlugin implements CameraLayersPlugin {
   async addLayer(layer: CameraLayer): Promise<{ layerId: string }> {
     const id = layer.id || this.generateId();
     this.layers.set(id, { ...layer, id });
+    
+    // Preload images for image layers
+    if (layer.type === 'image' && (layer.imagePath || layer.imageUrl)) {
+      await this.preloadImage(id, layer.imagePath || layer.imageUrl || '');
+    }
+    
     return { layerId: id };
   }
 
@@ -398,17 +405,29 @@ export class CameraLayersWeb extends WebPlugin implements CameraLayersPlugin {
     width: number,
     height: number
   ): void {
-    // Note: Actual image loading would require async handling
-    // This is a simplified version - production would cache loaded images
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, x, y, width, height);
-    };
-    if (layer.imagePath) {
-      img.src = layer.imagePath;
-    } else if (layer.imageUrl) {
-      img.src = layer.imageUrl;
+    const imageSrc = layer.imagePath || layer.imageUrl;
+    if (!imageSrc) return;
+
+    // Use cached image if available
+    const cachedImage = this.imageCache.get(layer.id || '');
+    if (cachedImage && cachedImage.complete) {
+      ctx.drawImage(cachedImage, x, y, width, height);
     }
+  }
+
+  private async preloadImage(layerId: string, src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // Enable CORS for remote images
+      img.onload = () => {
+        this.imageCache.set(layerId, img);
+        resolve();
+      };
+      img.onerror = () => {
+        reject(new Error(`Failed to load image: ${src}`));
+      };
+      img.src = src;
+    });
   }
 
   private setupZoomGesture(): void {

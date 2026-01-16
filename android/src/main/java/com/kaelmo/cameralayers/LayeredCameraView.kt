@@ -39,6 +39,7 @@ class LayeredCameraView(context: Context) : FrameLayout(context) {
     private var layers: List<CameraLayer> = emptyList()
     private var captureCallback: ((CaptureResult?, Exception?) -> Unit)? = null
     private var currentQuality: Int = 85
+    private val imageCache = mutableMapOf<String, Bitmap>()
 
     init {
         textureView = TextureView(context)
@@ -474,8 +475,8 @@ class LayeredCameraView(context: Context) : FrameLayout(context) {
         }
 
         layer.imageUrl?.let { url ->
-            // For remote URLs, we would need async loading
-            // This is simplified - production would cache images
+            // Use cached image for remote URLs
+            bitmap = imageCache[url]
         }
 
         bitmap?.let {
