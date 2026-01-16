@@ -1,0 +1,32 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Build
+dist/
+*.tsbuildinfo
+
+# iOS
+ios/Pods
+ios/Podfile.lock
+ios/.DS_Store
+ios/build/
+*.xcworkspace
+*.xcuserdata
+
+# Android
+android/build/
+android/.gradle/
+android/local.properties
+*.iml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
