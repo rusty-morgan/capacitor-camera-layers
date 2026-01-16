@@ -212,10 +212,13 @@ export class CameraLayersWeb extends WebPlugin implements CameraLayersPlugin {
       const capabilities = track.getCapabilities() as any;
 
       if (capabilities.torch) {
-        await track.applyConstraints({
-          // @ts-ignore
-          advanced: [{ torch: options.mode === 'torch' || options.mode === 'on' }],
-        });
+        try {
+          await track.applyConstraints({
+            advanced: [{ torch: options.mode === 'torch' || options.mode === 'on' } as any],
+          } as any);
+        } catch (error) {
+          // Torch not supported, silently fail
+        }
       }
     }
   }
@@ -226,21 +229,24 @@ export class CameraLayersWeb extends WebPlugin implements CameraLayersPlugin {
       const capabilities = track.getCapabilities() as any;
 
       if (capabilities.zoom) {
-        await track.applyConstraints({
-          // @ts-ignore
-          advanced: [{ zoom: options.zoom }],
-        });
+        try {
+          await track.applyConstraints({
+            advanced: [{ zoom: options.zoom } as any],
+          } as any);
+        } catch (error) {
+          // Zoom not supported, silently fail
+        }
       }
     }
   }
 
   async setFocus(options: { x: number; y: number }): Promise<void> {
-    // Limited support on web
-    console.log('Focus not fully supported on web', options);
+    // Limited support on web - focus controls not widely supported in browsers
+    // This is a placeholder for future implementation when browser support improves
   }
 
   private generateId(): string {
-    return `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 
   private renderLayers(): void {
