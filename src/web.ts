@@ -167,9 +167,12 @@ export class CameraLayersWeb extends WebPlugin implements CameraLayersPlugin {
     const id = layer.id || this.generateId();
     this.layers.set(id, { ...layer, id });
     
-    // Preload images for image layers
+    // Preload images for image layers if not already cached
     if (layer.type === 'image' && (layer.imagePath || layer.imageUrl)) {
-      await this.preloadImage(id, layer.imagePath || layer.imageUrl || '');
+      const imageSrc = layer.imagePath || layer.imageUrl || '';
+      if (!this.imageCache.has(id)) {
+        await this.preloadImage(id, imageSrc);
+      }
     }
     
     return { layerId: id };
